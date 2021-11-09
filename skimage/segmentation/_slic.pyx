@@ -3,6 +3,7 @@
 #cython: nonecheck=False
 #cython: wraparound=False
 from libc.float cimport DBL_MAX
+from cpython cimport bool
 
 import numpy as np
 cimport numpy as cnp

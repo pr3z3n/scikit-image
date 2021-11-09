@@ -1,8 +1,7 @@
+dask[array]>=0.9.0
+imread
 SimpleITK
-astropy>=1.2.0
+astropy
 tifffile
 qtpy
 pyamg
-dask[array]>=0.9.0
-# cloudpickle is necessary to provide the 'processes' scheduler for dask
-cloudpickle>=0.2.1

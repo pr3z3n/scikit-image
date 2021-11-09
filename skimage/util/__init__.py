@@ -35,5 +35,4 @@ __all__ = ['img_as_float32',
            'regular_seeds',
            'apply_parallel',
            'invert',
-           'unique_rows',
-           ]
+           'unique_rows']

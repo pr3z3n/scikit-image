@@ -35,11 +35,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import cython
 import numpy as np
-from . import heap
+import heap
 from .._shared.utils import warn
 
 cimport numpy as cnp
-from . cimport heap
+cimport heap
 
 OFFSET_D = np.int8
 OFFSETS_INDEX_D = np.int16

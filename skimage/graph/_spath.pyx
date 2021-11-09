@@ -1,4 +1,7 @@
-from . cimport _mcp
+# -*- python -*-
+
+import _mcp
+cimport _mcp
 from libc.math cimport fabs
 
 

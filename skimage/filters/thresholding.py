@@ -527,8 +527,8 @@ def threshold_li(image, *, tolerance=None):
 
     tolerance : float, optional
         Finish the computation when the change in the threshold in an iteration
-        is less than this value. By default, this is half the smallest
-        difference between intensity values in ``image``.
+        is less than this value. By default, this is half of the range of the
+        input image, divided by 256.
 
     Returns
     -------
@@ -578,7 +578,8 @@ def threshold_li(image, *, tolerance=None):
     # Li's algorithm requires positive image (because of log(mean))
     image_min = np.min(image)
     image -= image_min
-    tolerance = tolerance or np.min(np.diff(np.unique(image))) / 2
+    image_range = np.max(image)
+    tolerance = tolerance or 0.5 * image_range / 256
 
     # Initial estimate
     t_curr = np.mean(image)

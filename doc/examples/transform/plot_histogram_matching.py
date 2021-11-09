@@ -24,7 +24,7 @@ from skimage.transform import match_histograms
 reference = data.coffee()
 image = data.chelsea()
 
-matched = match_histograms(image, reference, multichannel=True)
+matched = match_histograms(image, reference)
 
 fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(8, 3),
                                     sharex=True, sharey=True)

@@ -416,3 +416,25 @@ def test_range():
                 "Maximum of `{0}` is larger than 1".format(
                     detector.__name__)
                 )
+
+
+def test_forward_energy():
+    img = np.array([[0, 0, 1, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 1, 0, 0, 1],
+                    [1, 0, 0, 1, 0]], dtype=np.float)
+
+    expected = np.array([[0, 0, 0, 0, 0],
+                         [0, 1, 0, 1, 0],
+                         [0, 1, 0, 1, 0],
+                         [0, 0, 1, 1, 0],
+                         [0, 0, 0, 0, 0]], dtype=np.float)
+
+    out = filters.forward_energy(img, 'vertical')
+    testing.assert_equal(out, expected)
+
+    img = img.T
+
+    out = filters.forward_energy(img, 'horizontal')
+    testing.assert_equal(out, expected.T)

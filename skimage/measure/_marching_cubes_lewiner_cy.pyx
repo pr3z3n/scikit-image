@@ -25,7 +25,10 @@ cimport numpy as np
 import cython
 
 # Enable low level memory management
-from libc.stdlib cimport malloc, free
+# from libc.stdlib cimport malloc, free
+cdef extern from "stdlib.h": # The cimport does not work on my Linux Laptop
+   void free(void* ptr)
+   void* malloc(size_t size)
 
 # Define tiny winy number
 cdef double FLT_EPSILON = np.spacing(1.0) #0.0000001
@@ -187,13 +190,6 @@ cdef class Cell:
         # Allocate face layers
         self.faceLayer1 = <int *>malloc(self.nx*self.ny*4 * sizeof(int))
         self.faceLayer2 = <int *>malloc(self.nx*self.ny*4 * sizeof(int))
-
-        if (self.faceLayer1 is NULL or self.faceLayer2 is NULL or
-            self.vv is NULL or self.vg is NULL or self._vertices is NULL or
-            self._normals is NULL or self._values is NULL or
-            self._faces is NULL):
-            raise MemoryError()
-
         cdef int i
         for i in range(self.nx*self.ny*4):
             self.faceLayer1[i] = -1
@@ -219,11 +215,10 @@ cdef class Cell:
         self._values = <float *>malloc(self._vertexMaxCount * sizeof(float))
         # Clear normals and values
         cdef int i, j
-        if self._values is not NULL and self._normals is not NULL:
-            for i in range(self._vertexMaxCount):
-                self._values[i] = 0.0
-                for j in range(3):
-                    self._normals[i*3+j] = 0.0
+        for i in range(self._vertexMaxCount):
+            self._values[i] = 0.0
+            for j in range(3):
+                self._normals[i*3+j] = 0.0
 
         # Init faces
         self._faceCount = 0
@@ -232,14 +227,22 @@ cdef class Cell:
 
 
     def __dealloc__(self):
-        free(self.vv)
-        free(self.vg)
-        free(self.faceLayer1)
-        free(self.faceLayer2)
-        free(self._vertices)
-        free(self._normals)
-        free(self._values)
-        free(self._faces)
+        if self.vv is not NULL:
+            free(self.vv)
+        if self.vg is not NULL:
+            free(self.vg)
+        if self.faceLayer1 is not NULL:
+            free(self.faceLayer1)
+        if self.faceLayer2 is not NULL:
+            free(self.faceLayer2)
+        if self._vertices is not NULL:
+            free(self._vertices)
+        if self._normals is not NULL:
+            free(self._normals)
+        if self._values is not NULL:
+            free(self._values)
+        if self._faces is not NULL:
+            free(self._faces)
 
 
     cdef void _increase_size_vertices(self):
@@ -250,11 +253,6 @@ cdef class Cell:
         cdef float *newVertices = <float *>malloc(newMaxCount*3 * sizeof(float))
         cdef float *newNormals = <float *>malloc(newMaxCount*3 * sizeof(float))
         cdef float *newValues = <float *>malloc(newMaxCount * sizeof(float))
-        if newVertices is NULL or newNormals is NULL or newValues is NULL:
-            free(newVertices)
-            free(newNormals)
-            free(newValues)
-            raise MemoryError()
         # Clear
         cdef int i, j
         for i in range(self._vertexCount, newMaxCount):
@@ -280,8 +278,6 @@ cdef class Cell:
         # Allocate new array
         cdef int newMaxCount = self._faceMaxCount * 2
         cdef int *newFaces = <int *>malloc(newMaxCount * sizeof(int))
-        if newFaces is NULL:
-            raise MemoryError()
         # Copy
         cdef int i
         for i in range(self._faceCount):
@@ -750,7 +746,7 @@ cdef class Lut:
     This class defines functions to look up values using 1, 2 or 3 indices.
     """
 
-    cdef signed char* VALUES
+    cdef char* VALUES
     cdef int L0 # Length
     cdef int L1 # size of tuple
     cdef int L2 # size of tuple in tuple (if any)
@@ -771,9 +767,7 @@ cdef class Lut:
         array = array.ravel()
         cdef int n, N
         N = self.L0 * self.L1 * self.L2
-        self.VALUES = <signed char *> malloc(N * sizeof(signed char))
-        if self.VALUES is NULL:
-            raise MemoryError()
+        self.VALUES = <char *> malloc(N * sizeof(char))
         for n in range(N):
             self.VALUES[n] = array[n]
 
@@ -1406,7 +1400,7 @@ cdef int test_internal(Cell cell, LutProvider luts, int case, int config, int su
             Ct = cell.v1 + ( cell.v5 - cell.v1 ) * t
             Dt = cell.v0 + ( cell.v4 - cell.v0 ) * t
         else:
-            print( "Invalid edge %i." % edge )
+             print( "Invalid edge %i." % edge )
     else:
         print( "Invalid ambiguous case %i." % case )
 

@@ -7,12 +7,20 @@ cimport numpy as cnp
 from libc.math cimport sin, cos, abs
 from .._shared.interpolation cimport bilinear_interpolation, round
 from .._shared.transform cimport integrate
+import cython
 
 cdef extern from "numpy/npy_math.h":
     double NAN "NPY_NAN"
 
-from .._shared.fused_numerics cimport np_anyint as any_int
-from .._shared.fused_numerics cimport np_real_numeric
+ctypedef fused any_int:
+    cnp.uint8_t
+    cnp.uint16_t
+    cnp.uint32_t
+    cnp.uint64_t
+    cnp.int8_t
+    cnp.int16_t
+    cnp.int32_t
+    cnp.int64_t
 
 
 def _glcm_loop(any_int[:, ::1] image, double[:] distances,
@@ -53,8 +61,8 @@ def _glcm_loop(any_int[:, ::1] image, double[:] distances,
             angle = angles[a_idx]
             for d_idx in range(distances.shape[0]):
                 distance = distances[d_idx]
-                offset_row = round(sin(angle) * distance)
-                offset_col = round(cos(angle) * distance)
+                offset_row = <int>round(sin(angle) * distance)
+                offset_col = <int>round(cos(angle) * distance)
                 start_row = max(0, -offset_row)
                 end_row = min(rows, rows - offset_row)
                 start_col = max(0, -offset_col)
@@ -85,7 +93,7 @@ cdef inline int _bit_rotate_right(int value, int length) nogil:
 
 
 def _local_binary_pattern(double[:, ::1] image,
-                          int P, float R, char method=b'D'):
+                          int P, float R, char method='D'):
     """Gray scale and rotation invariant LBP (Local Binary Patterns).
 
     LBP is an invariant descriptor that can be used for texture classification.
@@ -145,9 +153,9 @@ def _local_binary_pattern(double[:, ::1] image,
         for r in range(image.shape[0]):
             for c in range(image.shape[1]):
                 for i in range(P):
-                    bilinear_interpolation[cnp.float64_t, double, double](
-                            &image[0, 0], rows, cols, r + rp[i], c + cp[i],
-                            b'C', 0, &texture[i])
+                    texture[i] = bilinear_interpolation(&image[0, 0], rows, cols,
+                                                        r + rp[i], c + cp[i],
+                                                        'C', 0)
                 # signed / thresholded texture
                 for i in range(P):
                     if texture[i] - image[r, c] >= 0:
@@ -157,8 +165,8 @@ def _local_binary_pattern(double[:, ::1] image,
 
                 lbp = 0
 
-                # if method == b'var':
-                if method == b'V':
+                # if method == 'var':
+                if method == 'V':
                     # Compute the variance without passing from numpy.
                     # Following the LBP paper, we're taking a biased estimate
                     # of the variance (ddof=0)
@@ -173,14 +181,14 @@ def _local_binary_pattern(double[:, ::1] image,
                         lbp = var_
                     else:
                         lbp = NAN
-                # if method == b'uniform':
-                elif method == b'U' or method == b'N':
+                # if method == 'uniform':
+                elif method == 'U' or method == 'N':
                     # determine number of 0 - 1 changes
                     changes = 0
                     for i in range(P - 1):
                         changes += (signed_texture[i]
                                     - signed_texture[i + 1]) != 0
-                    if method == b'N':
+                    if method == 'N':
                         # Uniform local binary patterns are defined as patterns
                         # with at most 2 value changes (from 0 to 1 or from 1 to
                         # 0). Uniform patterns can be characterized by their
@@ -250,12 +258,12 @@ def _local_binary_pattern(double[:, ::1] image,
                         else:
                             lbp = P + 1
                 else:
-                    # method == b'default'
+                    # method == 'default'
                     for i in range(P):
                         lbp += signed_texture[i] * weights[i]
 
-                    # method == b'ror'
-                    if method == b'R':
+                    # method == 'ror'
+                    if method == 'R':
                         # shift LBP P times to the right and get minimum value
                         rotation_chain[0] = <int>lbp
                         for i in range(1, P):
